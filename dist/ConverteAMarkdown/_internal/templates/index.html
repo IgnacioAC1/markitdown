@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MarkItDown</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body { height: 100%; overflow: hidden; }
+
+    body {
+      font-family: 'Roboto', sans-serif;
+      background: #f5f5f5;
+      color: #212121;
+      display: flex;
+      flex-direction: column;
+      font-weight: 400;
+    }
+
+    /* ── TOOLBAR ─────────────────────────────────────────────── */
+    .toolbar {
+      height: 52px;
+      background: #fff;
+      border-bottom: 1px solid #e0e0e0;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 0 20px;
+      flex-shrink: 0;
+    }
+
+    .brand {
+      font-size: .9rem;
+      font-weight: 500;
+      color: #1565c0;
+      letter-spacing: .01em;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .divider { width: 1px; height: 20px; background: #e0e0e0; flex-shrink: 0; }
+
+    /* file chip */
+    .file-chip {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      height: 32px;
+      padding: 0 12px;
+      border: 1px solid #bdbdbd;
+      border-radius: 4px;
+      background: #fafafa;
+      cursor: pointer;
+      font-size: .8rem;
+      font-weight: 400;
+      color: #616161;
+      white-space: nowrap;
+      flex-shrink: 0;
+      transition: border-color .15s;
+    }
+
+    .file-chip:hover        { border-color: #1565c0; color: #1565c0; }
+    .file-chip.has-file     { border-color: #1565c0; color: #1565c0; background: #e3f2fd; }
+
+    .file-chip input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+    }
+
+    .chip-name {
+      max-width: 480px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      pointer-events: none;
+    }
+
+    .or-text {
+      font-size: .75rem;
+      color: #9e9e9e;
+      flex-shrink: 0;
+    }
+
+    /* url input */
+    .url-wrap { width: 280px; flex-shrink: 0; min-width: 0; }
+
+    .url-wrap input {
+      width: 100%;
+      height: 32px;
+      border: 1px solid #bdbdbd;
+      border-radius: 4px;
+      padding: 0 12px;
+      font-family: 'Roboto', sans-serif;
+      font-size: .8rem;
+      color: #212121;
+      background: #fafafa;
+      outline: none;
+      transition: border-color .15s;
+    }
+
+    .url-wrap input::placeholder { color: #9e9e9e; }
+    .url-wrap input:focus        { border-color: #1565c0; background: #fff; }
+
+    /* convert button */
+    .btn-convert {
+      height: 32px;
+      padding: 0 18px;
+      background: #1565c0;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      font-family: 'Roboto', sans-serif;
+      font-size: .8rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background .15s;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
+
+    .btn-convert:hover:not(:disabled) { background: #0d47a1; }
+    .btn-convert:disabled             { background: #90caf9; cursor: not-allowed; }
+
+    .btn-convert .spin {
+      width: 12px; height: 12px;
+      border: 2px solid rgba(255,255,255,.4);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: rot .6s linear infinite;
+      display: none;
+    }
+
+    .btn-convert.loading .spin  { display: block; }
+    .btn-convert.loading .lbl   { display: none; }
+
+    @keyframes rot { to { transform: rotate(360deg); } }
+
+    .btn-close {
+      height: 100%;
+      padding: 0 16px;
+      background: none;
+      border: none;
+      border-left: 1px solid #e0e0e0;
+      font-family: 'Roboto', sans-serif;
+      font-size: .8rem;
+      font-weight: 500;
+      color: #9e9e9e;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+      transition: background .15s, color .15s;
+    }
+
+    .btn-close:hover { background: #ffebee; color: #c62828; }
+
+    /* ── PROGRESS BAR ────────────────────────────────────────── */
+    .progress-wrap {
+      height: 0;
+      overflow: hidden;
+      background: #e3f2fd;
+      border-bottom: 1px solid #bbdefb;
+      transition: height .15s;
+      flex-shrink: 0;
+      position: relative;
+    }
+
+    .progress-wrap.on { height: 28px; }
+
+    .progress-bar {
+      height: 100%;
+      background: #1565c0;
+      width: 0%;
+      transition: width .4s ease;
+    }
+
+    .progress-label {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: .72rem;
+      font-weight: 700;
+      color: #0d47a1;
+      letter-spacing: .03em;
+      pointer-events: none;
+    }
+
+    /* ── ERROR ───────────────────────────────────────────────── */
+    .error-strip {
+      height: 0; overflow: hidden;
+      background: #ffebee;
+      border-bottom: 1px solid #ffcdd2;
+      font-size: .78rem;
+      color: #c62828;
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      transition: height .15s;
+      flex-shrink: 0;
+    }
+
+    .error-strip.on { height: 32px; }
+
+    /* ── MAIN ────────────────────────────────────────────────── */
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* empty state */
+    .empty-state {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      color: #9e9e9e;
+    }
+
+    .empty-state svg   { color: #bdbdbd; }
+    .empty-state h2    { font-size: .9rem; font-weight: 400; color: #757575; }
+    .empty-state p     { font-size: .78rem; color: #9e9e9e; }
+
+    /* result pane */
+    .result-pane {
+      display: none;
+      flex-direction: column;
+      flex: 1;
+      overflow: hidden;
+      background: #fff;
+    }
+
+    .result-pane.on { display: flex; }
+
+    /* result bar */
+    .result-bar {
+      height: 40px;
+      display: flex;
+      align-items: center;
+      border-bottom: 1px solid #e0e0e0;
+      padding: 0 8px 0 16px;
+      gap: 4px;
+      flex-shrink: 0;
+      background: #fff;
+    }
+
+    .doc-label {
+      font-size: .75rem;
+      color: #757575;
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      min-width: 0;
+    }
+
+    .doc-label strong { color: #212121; font-weight: 500; }
+
+    /* view tabs */
+    .vtabs { display: flex; gap: 4px; margin: 0 6px; }
+
+    .vtab {
+      height: 28px;
+      padding: 0 12px;
+      background: #e0e0e0;
+      border: none;
+      border-radius: 4px;
+      font-family: 'Roboto', sans-serif;
+      font-size: .8rem;
+      font-weight: 500;
+      color: #424242;
+      cursor: pointer;
+      transition: all .12s;
+    }
+
+    .vtab:hover { background: #bdbdbd; color: #212121; }
+    .vtab.on    { background: #0d47a1; color: #fff; }
+
+    .sep { width: 1px; height: 16px; background: #e0e0e0; margin: 0 4px; }
+
+    /* action buttons */
+    .act-btn {
+      height: 28px;
+      padding: 0 12px;
+      background: #1565c0;
+      border: none;
+      border-radius: 4px;
+      font-family: 'Roboto', sans-serif;
+      font-size: .8rem;
+      font-weight: 500;
+      color: #fff;
+      cursor: pointer;
+      transition: all .12s;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      white-space: nowrap;
+    }
+
+    .act-btn:hover         { background: #0d47a1; }
+    .act-btn.danger        { background: #c62828; }
+    .act-btn.danger:hover  { background: #b71c1c; }
+    .act-btn.copied        { background: #2e7d32; }
+
+    /* ── CONTENT VIEWS ───────────────────────────────────────── */
+    .cview { display: none; flex: 1; overflow: auto; }
+    .cview.on { display: block; }
+
+    .cview::-webkit-scrollbar       { width: 6px; height: 6px; }
+    .cview::-webkit-scrollbar-track { background: #fafafa; }
+    .cview::-webkit-scrollbar-thumb { background: #e0e0e0; border-radius: 3px; }
+
+    /* raw */
+    #vraw {
+      font-family: 'Roboto Mono', 'Courier New', monospace;
+      font-size: .78rem;
+      line-height: 1.7;
+      color: #424242;
+      padding: 24px 28px;
+      white-space: pre-wrap;
+      word-break: break-word;
+      background: #fafafa;
+    }
+
+    /* rendered */
+    #vrendered {
+      padding: 32px 40px;
+      max-width: 100%;
+    }
+
+    #vrendered h1 {
+      font-size: 1.5rem;
+      font-weight: 300;
+      color: #212121;
+      margin: 0 0 20px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid #e0e0e0;
+      line-height: 1.3;
+    }
+
+    #vrendered h2 {
+      font-size: 1.1rem;
+      font-weight: 500;
+      color: #212121;
+      margin: 28px 0 12px;
+    }
+
+    #vrendered h3 {
+      font-size: .9rem;
+      font-weight: 500;
+      color: #424242;
+      margin: 20px 0 8px;
+    }
+
+    #vrendered p {
+      font-size: .88rem;
+      line-height: 1.75;
+      color: #424242;
+      margin: 0 0 12px;
+    }
+
+    #vrendered ul, #vrendered ol {
+      font-size: .88rem;
+      line-height: 1.75;
+      color: #424242;
+      padding-left: 22px;
+      margin: 0 0 12px;
+    }
+
+    #vrendered li { margin-bottom: 3px; }
+
+    #vrendered code {
+      font-family: 'Roboto Mono', 'Courier New', monospace;
+      font-size: .78rem;
+      background: #f5f5f5;
+      border: 1px solid #e0e0e0;
+      border-radius: 3px;
+      padding: 1px 5px;
+      color: #1565c0;
+    }
+
+    #vrendered pre {
+      background: #f5f5f5;
+      border: 1px solid #e0e0e0;
+      border-radius: 4px;
+      padding: 14px 16px;
+      overflow-x: auto;
+      margin: 0 0 14px;
+    }
+
+    #vrendered pre code { background: none; border: none; padding: 0; color: #424242; }
+
+    /* tables with horizontal scroll */
+    .table-wrap {
+      width: 100%;
+      overflow-x: auto;
+      margin: 0 0 20px;
+      border: 1px solid #e0e0e0;
+      border-radius: 4px;
+    }
+
+    .table-wrap::-webkit-scrollbar       { height: 6px; }
+    .table-wrap::-webkit-scrollbar-track { background: #fafafa; }
+    .table-wrap::-webkit-scrollbar-thumb { background: #bdbdbd; border-radius: 3px; }
+
+    #vrendered table {
+      border-collapse: collapse;
+      width: 100%;
+      min-width: max-content;
+      font-size: .8rem;
+    }
+
+    #vrendered th {
+      padding: 9px 14px;
+      text-align: left;
+      font-weight: 500;
+      font-size: .75rem;
+      color: #616161;
+      background: #f5f5f5;
+      border-bottom: 1px solid #e0e0e0;
+      white-space: nowrap;
+    }
+
+    #vrendered td {
+      padding: 8px 14px;
+      color: #424242;
+      border-bottom: 1px solid #eeeeee;
+      white-space: nowrap;
+    }
+
+    #vrendered tr:last-child td { border-bottom: none; }
+    #vrendered tr:hover td      { background: #f9f9f9; }
+
+    #vrendered a              { color: #1565c0; text-decoration: none; }
+    #vrendered a:hover        { text-decoration: underline; }
+    #vrendered blockquote {
+      border-left: 3px solid #e0e0e0;
+      padding: 4px 0 4px 16px;
+      margin: 0 0 12px;
+      color: #757575;
+      font-style: italic;
+    }
+    #vrendered hr     { border: none; border-top: 1px solid #e0e0e0; margin: 22px 0; }
+    #vrendered img    { max-width: 100%; border-radius: 4px; }
+    #vrendered strong { color: #212121; font-weight: 500; }
+
+    /* ── DRAG OVERLAY ────────────────────────────────────────── */
+    .drag-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(255,255,255,.92);
+      border: 2px dashed #1565c0;
+      z-index: 200;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 12px;
+      color: #1565c0;
+      font-size: .85rem;
+      font-weight: 500;
+      letter-spacing: .04em;
+    }
+
+    .drag-overlay.on { display: flex; }
+
+    /* ── TOAST ───────────────────────────────────────────────── */
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: #212121;
+      color: #fff;
+      border-radius: 4px;
+      padding: 10px 16px;
+      font-size: .78rem;
+      font-weight: 400;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transform: translateY(60px);
+      opacity: 0;
+      transition: all .2s ease;
+      z-index: 300;
+    }
+
+    .toast.on { transform: translateY(0); opacity: 1; }
+  </style>
+</head>
+<body>
+
+<!-- drag overlay -->
+<div class="drag-overlay" id="drag-overlay">
+  <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+    <polyline points="17,8 12,3 7,8"/>
+    <line x1="12" y1="3" x2="12" y2="15"/>
+  </svg>
+  Suelta el archivo para convertir
+</div>
+
+<!-- toolbar -->
+<header class="toolbar">
+  <span class="brand">CONVIERTE A MARKDOWN</span>
+  <div class="divider"></div>
+
+  <div class="file-chip" id="file-chip">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+      <polyline points="17,8 12,3 7,8"/>
+      <line x1="12" y1="3" x2="12" y2="15"/>
+    </svg>
+    <span class="chip-name" id="chip-label">Subir archivo</span>
+    <input type="file" id="file-input"
+      accept=".pdf,.docx,.doc,.xlsx,.xls,.pptx,.ppt,.html,.htm,.csv,.json,.xml,.zip,.epub,.ipynb,.jpg,.jpeg,.png,.gif,.bmp,.mp3,.wav,.m4a,.mp4,.msg" />
+  </div>
+
+  <span class="or-text">o</span>
+
+  <div class="url-wrap">
+    <input type="url" id="url-input"
+      placeholder="Pega una URL — página web, PDF, YouTube, Wikipedia…" />
+  </div>
+
+  <button class="btn-convert" id="btn-convert" onclick="handleConvert()">
+    <div class="spin"></div>
+    <span class="lbl">Convertir</span>
+  </button>
+
+  <button class="btn-close" onclick="cerrarApp()" title="Cerrar aplicación">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+    </svg>
+    Cerrar
+  </button>
+</header>
+
+<!-- progress bar -->
+<div class="progress-wrap" id="progress-wrap">
+  <div class="progress-bar" id="progress-bar"></div>
+  <div class="progress-label" id="progress-label">Convirtiendo… 0%</div>
+</div>
+
+<!-- error -->
+<div class="error-strip" id="error-strip"></div>
+
+<!-- main -->
+<main>
+  <div class="empty-state" id="empty-state">
+    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+      <polyline points="14,2 14,8 20,8"/>
+      <line x1="16" y1="13" x2="8" y2="13"/>
+      <line x1="16" y1="17" x2="8" y2="17"/>
+    </svg>
+    <h2>El resultado aparecerá aquí</h2>
+    <p>Sube un archivo o pega una URL para convertirlo a Markdown</p>
+  </div>
+
+  <div class="result-pane" id="result-pane">
+    <div class="result-bar">
+      <span class="doc-label" id="doc-label">—</span>
+
+      <div class="vtabs">
+        <button class="vtab on" onclick="switchView('rendered')">Vista previa</button>
+        <button class="vtab"    onclick="switchView('raw')">Markdown</button>
+      </div>
+
+      <div class="sep"></div>
+
+      <button class="act-btn" id="btn-copy" onclick="copyMd()">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="9" y="9" width="13" height="13" rx="2"/>
+          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+        </svg>
+        Copiar
+      </button>
+
+      <button class="act-btn" onclick="downloadMd()">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7,10 12,15 17,10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        Descargar .md
+      </button>
+
+      <div class="sep"></div>
+
+      <button class="act-btn danger" onclick="clearAll()">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+        Limpiar
+      </button>
+    </div>
+
+    <div class="cview on" id="vrendered"></div>
+    <div class="cview"    id="vraw"></div>
+  </div>
+</main>
+
+<!-- toast -->
+<div class="toast" id="toast">
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+    <polyline points="20,6 9,17 4,12"/>
+  </svg>
+  Copiado al portapapeles
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/marked@9/marked.min.js"></script>
+<script>
+  let md = '', filename = 'documento.md', selectedFile = null, dragN = 0, toastT;
+
+  // wrap tables for horizontal scroll
+  function renderMd(text) {
+    const html = marked.parse(text);
+    return html
+      .replace(/<table>/g, '<div class="table-wrap"><table>')
+      .replace(/<\/table>/g, '</table></div>');
+  }
+
+  // file input
+  const fileInput = document.getElementById('file-input');
+  const fileChip  = document.getElementById('file-chip');
+  const chipLabel = document.getElementById('chip-label');
+
+  fileInput.addEventListener('change', () => { if (fileInput.files[0]) pickFile(fileInput.files[0]); });
+
+  function pickFile(f) {
+    selectedFile = f;
+    chipLabel.textContent = f.name;
+    fileChip.classList.add('has-file');
+    document.getElementById('url-input').value = '';
+  }
+
+  // drag & drop
+  const overlay = document.getElementById('drag-overlay');
+  document.addEventListener('dragenter', e => { e.preventDefault(); if (++dragN === 1) overlay.classList.add('on'); });
+  document.addEventListener('dragleave', ()  => { if (--dragN === 0) overlay.classList.remove('on'); });
+  document.addEventListener('dragover',  e  => e.preventDefault());
+  document.addEventListener('drop', e => {
+    e.preventDefault(); dragN = 0; overlay.classList.remove('on');
+    const f = e.dataTransfer.files[0];
+    if (f) pickFile(f);
+  });
+
+  // convert
+  async function handleConvert() {
+    const url = document.getElementById('url-input').value.trim();
+    if (!selectedFile && !url) { showErr('Elige un archivo o introduce una URL.'); return; }
+    hideErr(); setLoad(true);
+    try {
+      let res;
+      if (selectedFile) {
+        const form = new FormData();
+        form.append('file', selectedFile);
+        res = await fetch('/convert', { method: 'POST', body: form });
+      } else {
+        res = await fetch('/convert', { method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url }) });
+      }
+      const data = await res.json();
+      if (!res.ok) { showErr(data.error); return; }
+      showResult(data);
+    } catch { showErr('Error de conexión con el servidor.'); }
+    finally { setLoad(false); }
+  }
+
+  document.getElementById('url-input').addEventListener('keydown', e => { if (e.key === 'Enter') handleConvert(); });
+
+  // result
+  function showResult(data) {
+    md = data.markdown; filename = data.filename;
+    document.getElementById('doc-label').innerHTML = `<strong>${data.title}</strong> &mdash; ${data.filename}`;
+    document.getElementById('vrendered').innerHTML = renderMd(data.markdown);
+    document.getElementById('vraw').textContent = data.markdown;
+    document.getElementById('empty-state').style.display = 'none';
+    document.getElementById('result-pane').classList.add('on');
+    switchView('rendered');
+  }
+
+  function switchView(v) {
+    const r = v === 'rendered';
+    document.querySelectorAll('.vtab').forEach((t, i) => t.classList.toggle('on', i === 0 ? r : !r));
+    document.getElementById('vrendered').classList.toggle('on', r);
+    document.getElementById('vraw').classList.toggle('on', !r);
+  }
+
+  // actions
+  async function copyMd() {
+    await navigator.clipboard.writeText(md);
+    const btn = document.getElementById('btn-copy');
+    btn.classList.add('copied'); showToast();
+    setTimeout(() => btn.classList.remove('copied'), 2200);
+  }
+
+  function downloadMd() {
+    const a = Object.assign(document.createElement('a'), {
+      href: URL.createObjectURL(new Blob([md], { type: 'text/markdown;charset=utf-8' })),
+      download: filename,
+    });
+    a.click(); URL.revokeObjectURL(a.href);
+  }
+
+  function clearAll() {
+    md = ''; filename = 'documento.md'; selectedFile = null;
+    fileInput.value = '';
+    chipLabel.textContent = 'Subir archivo';
+    fileChip.classList.remove('has-file');
+    document.getElementById('url-input').value = '';
+    document.getElementById('result-pane').classList.remove('on');
+    document.getElementById('empty-state').style.display = '';
+    hideErr();
+  }
+
+  // progress bar
+  let progressInterval = null;
+  let progressValue = 0;
+
+  function startProgress() {
+    progressValue = 0;
+    const wrap  = document.getElementById('progress-wrap');
+    const bar   = document.getElementById('progress-bar');
+    const label = document.getElementById('progress-label');
+    wrap.classList.add('on');
+    bar.style.width = '0%';
+    label.textContent = 'Convirtiendo… 0%';
+
+    clearInterval(progressInterval);
+    progressInterval = setInterval(() => {
+      // sube rápido hasta ~70%, luego muy despacio hasta ~90%
+      const step = progressValue < 40 ? 4 : progressValue < 70 ? 2 : 0.4;
+      progressValue = Math.min(progressValue + step, 90);
+      bar.style.width = progressValue + '%';
+      label.textContent = `Convirtiendo… ${Math.round(progressValue)}%`;
+    }, 200);
+  }
+
+  function finishProgress() {
+    clearInterval(progressInterval);
+    const bar   = document.getElementById('progress-bar');
+    const label = document.getElementById('progress-label');
+    progressValue = 100;
+    bar.style.width = '100%';
+    label.textContent = 'Completado 100%';
+    setTimeout(() => {
+      document.getElementById('progress-wrap').classList.remove('on');
+      bar.style.width = '0%';
+    }, 600);
+  }
+
+  // helpers
+  function setLoad(on) {
+    const b = document.getElementById('btn-convert');
+    b.classList.toggle('loading', on);
+    b.disabled = on;
+    if (on) startProgress(); else finishProgress();
+  }
+  function showErr(msg) { const s = document.getElementById('error-strip'); s.textContent = msg; s.classList.add('on'); }
+  function hideErr()    { document.getElementById('error-strip').classList.remove('on'); }
+  async function cerrarApp() {
+    if (!confirm('¿Cerrar la aplicación?')) return;
+    await fetch('/shutdown', { method: 'POST' }).catch(() => {});
+    document.body.innerHTML = '<div style="font-family:Roboto,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;color:#757575;font-size:.9rem;">Aplicación cerrada. Puedes cerrar esta pestaña.</div>';
+  }
+
+  function showToast()  {
+    const t = document.getElementById('toast');
+    t.classList.add('on'); clearTimeout(toastT);
+    toastT = setTimeout(() => t.classList.remove('on'), 2200);
+  }
+</script>
+</body>
+</html>

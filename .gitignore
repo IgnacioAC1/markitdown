@@ -12,7 +12,7 @@ __pycache__/
 .Python
 build/
 develop-eggs/
-dist/
+# dist/  # comentado para incluir el ejecutable
 downloads/
 eggs/
 .eggs/
@@ -166,3 +166,9 @@ cython_debug/
 src/.DS_Store
 .DS_Store
 .cursorrules
+
+# PyInstaller build artifacts (temporales, no el dist final)
+build/
+*.spec
+__pycache__/
+*.pyc
