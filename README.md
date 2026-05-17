@@ -27,23 +27,40 @@ Convierte los siguientes formatos a Markdown fiel al original:
 
 ## Ejecutable (Windows)
 
-La carpeta `dist/ConverteAMarkdown/` contiene la aplicación lista para usar sin instalar nada.
+### Dónde está el ejecutable
+
+```
+dist\
+└── ConverteAMarkdown\                ← 📁 ESTA ES LA CARPETA QUE USAS
+    ├── ConverteAMarkdown.exe         ← ▶️  ESTE ES EL ARCHIVO QUE EJECUTAS
+    └── _internal\                    ← ⚠️  NO TOCAR (dependencias internas)
+```
+
+### Reglas importantes
+
+| | Qué hacer |
+|---|---|
+| 📁 Carpeta `ConverteAMarkdown\` | **Puedes moverla** a donde quieras: Escritorio, Documentos, `C:\Programas`… |
+| ▶️ `ConverteAMarkdown.exe` | **Nunca lo saques** de su carpeta. Siempre debe estar junto a `_internal\` |
+| ⚠️ Carpeta `_internal\` | **Nunca la borres ni muevas** por separado. Contiene todas las librerías que necesita el exe para funcionar |
+
+> Si mueves la aplicación, mueve **siempre la carpeta `ConverteAMarkdown\` completa**, no solo el `.exe`.
 
 ### Cómo ejecutarla
 
-1. Ir a la carpeta:
-   ```
-   dist\ConverteAMarkdown\
-   ```
+1. Abre la carpeta `dist\ConverteAMarkdown\`
 2. Doble clic en **`ConverteAMarkdown.exe`**
 3. El navegador se abre automáticamente en `http://127.0.0.1:5000`
 4. Para cerrar: botón **Cerrar** en la esquina superior derecha de la app
 
-> **Importante:** no separar `ConverteAMarkdown.exe` de la carpeta `_internal/`. Ambas deben estar juntas.
+### Acceso directo en el escritorio (recomendado)
 
-### Acceso directo en el escritorio
+Para no tener que buscar la carpeta cada vez:
 
-Clic derecho sobre `ConverteAMarkdown.exe` → *Enviar a* → *Escritorio (crear acceso directo)*
+1. Clic derecho sobre `ConverteAMarkdown.exe`
+2. → *Enviar a* → *Escritorio (crear acceso directo)*
+
+El acceso directo apunta al exe original — la carpeta puede quedarse donde esté.
 
 ---
 
